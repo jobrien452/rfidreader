@@ -1,6 +1,21 @@
 <!doctype html>
 <html>
     <body>
-        <h1>Hello World</h1>
+        <table border=1>
+            <tr>
+                <td>Name</td>
+                <td>Event</td>
+                <td>Lane</td>
+                <td>Time</td>
+            </tr>
+            {% for i in query['q'] %}
+                <tr>
+                    <td> {{i['rname']}} </td>
+                    <td> {{i['event']}} </td>
+                    <td> {{i['lane']}} </td>
+                    <td> {{i['runtime']}} </td>
+                </tr>
+            {% endfor %}
+        </table>
     </body>
 </html>

@@ -23,7 +23,7 @@ client = boto3.resource('dynamodb',
                         aws_secret_access_key='dQdl90MV+gxqQ8zXnqPnr7zCZl1yA/WgPuDWmT+/',
                         region_name='us-east-2')
 table = client.Table('rundata')
-pe = "id, runtime, event, lane, rname"
+pe = "runtime, event, lane, rname"
 
 #scans dynamodb for every index and returns them
 def scan():
@@ -34,14 +34,13 @@ def scan():
         responses.append(table.scan(ProjectionExpression=pe))
     for r in responses:
         for i in r['Items']:
-            query['q'].append(json.dumps(i, cls=DecimalEncoder))
+            query['q'].append(i)
     return query
     
 
 @app.route('/')
 def display():
-    print(scan())
-    return render_template('index.html')
+    return render_template('index.html', query=scan())
 
 if __name__ == '__main__':
     app.run(debug = True)
