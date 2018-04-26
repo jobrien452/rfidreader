@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 import boto3
-import flask import Flask, render_template, request, abort
-import flask.json import jsonify
 import json
+import decimal
+from flask import Flask, render_template, request, abort
+from flask.json import jsonify
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 
@@ -20,9 +21,9 @@ app = Flask(__name__)
 client = boto3.resource('dynamodb', 
                         aws_access_key_id='AKIAIIOO6CX7UFZIVIEA',
                         aws_secret_access_key='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',
-                        region_name='us-east-1')
+                        region_name='us-east-2')
 table = client.Table('rundata')
-pe = "id, runtime"
+pe = "id, runtime, event, lane, rname"
 
 #scans dynamodb for every index and returns them
 def scan():
