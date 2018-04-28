@@ -1,4 +1,5 @@
 import argparse
+import socket
 import usb.core
 import usb.util
 import sys
@@ -6,6 +7,13 @@ sys.path.append('RfidFiles')
 import reader
 import time
 
+from raceOrder import raceOrder
+
+import boto3
+import json
+import decimal
+from boto3.dynamodb.conditions import Key, Attr
+from botocore.exceptions import ClientError
 
 
 parser = argparse.ArgumentParser()
@@ -30,7 +38,7 @@ def readReader1():
 
 #Check if to enter debug mode
 #Just tests the rfid reader
-if args.debug:
+if args.debug != "0":
     print("In debug mode, Check RFID tags now")
     print("Press ctrl-C to end the debug mode")
     code1 = ""
@@ -40,6 +48,25 @@ if args.debug:
         if code1 != "":
             print("From Read1: " + str(code1))
             code1 = ""        
+
+# Helper class to convert a DynamoDB item to JSON.
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if o % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
+
+#Setup db writes
+client = boto3.resource('dynamodb', 
+                        aws_access_key_id='AKIAIIOO6CX7UFZIVIEA',
+                        aws_secret_access_key='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',
+                        region_name='us-east-2')
+table = client.Table('runtime2')
+pe = "id, event, runtime, lane, rname"
+
 
 #Global Params
 IP = args.serverIP
@@ -67,38 +94,60 @@ except socket.error:
 
 print("Created socket at "+ socket.gethostbyname(socket.gethostname())+" on port "+ str(PORT))
 
-s.listen(BACKLOG)
+s.listen(SIZE)
 
 #Receive the data
 def raceLoop(conn):
+    #Keeps track of the race number
+    raceCount = 0
     #Inf Loop to continue to listen for start signals
     while True:
+        currRace = raceOrder[raceCount]
+        currRaceDistInt = int(currRace.split()[1])
         #Should block here and only gets the start signal
-        dataBack = conn.recv(SIZE)
-        signalBack = bytes.decode(dataBack)
+        #dataBack = conn.recv(SIZE)
+        #signalBack = bytes.decode(dataBack)
+        signalBack = "start"
         if "start" in signalBack:
             startTime = time.time()
-            #Dictionary mapping rfid tag num to lane (key is the rfid num, value is list [lane number, num of laps]
-            rfidLaneMap = {64:[1,0],67:[2,0],65:[3,0],11:[4,0],68:[5,0]}
-            #For testing purposes
-            NumOLaps = 1
+            print("Race started: " + currRace)
+            #Dictionary mapping rfid tag num to lane (key is the rfid num, value is list [lane number, num of laps, end time]
+            rfidLaneMap = {64:[1,0,0],67:[2,0,0],65:[3,0,0],11:[4,0,0],68:[5,0,0]}
+            #Gets the number of laps
+            NumOLaps = int(currRaceDistInt/400)
             
             #Start listening for rfid tags
             laneFinishes = 0
-            while laneCount < 5:
+            while laneFinishes < 5:
                 code = readReader1()
                 if code in rfidLaneMap:
                     rfidLaneMap[code][1] += 1
                     print("Runner in Lane: " + str(rfidLaneMap[code][0]) + " just scanned in")
-                    if rfidLanMap[code][0] >= NumOLaps:
+                    if rfidLaneMap[code][0] >= NumOLaps:
                             print("Runner in Lane: " + str(rfidLaneMap[code][0]) + " just finished")
-                            laneCount += 1
+                            rfidLaneMap[code][2] = time.time()
+                            laneFinishes += 1
                     code = ""
             #Print results
             for x in rfidLaneMap:
-                print("Runner in Lane " + str(rfidLaneMap[x][0]) + " finshed with: " + str(rfidLaneMap[x][1]))
+                #format race time
+                raceTime = rfidLaneMap[x][2]-startTime
+                strRaceTime = time.strftime("%H:%M:%S",time.gmtime(raceTime))
+                print("Runner in Lane " + str(rfidLaneMap[x][0]) + " finshed with: " + strRaceTime)
+                
+                #Update time to database
+                response = table.update_item(
+                    Key={
+                         'id':(rfidLaneMap[x][0]+(raceCount*5)),
+                         'event':currRace
+                    },
+                    UpdateExpression="set runtime = :r",
+                    ExpressionAttributeValues={
+                        ':r': str(strRaceTime)
+                    },
+                    #ReturnValues="UPDATED_NEW"
+                )
             
-            #Send data to database
             
             #Send signal back to timer saying race is done
             
@@ -106,15 +155,16 @@ def raceLoop(conn):
         else:
             print("There was a bad start signal")
             sys.exit()
+        raceCount += 1
 
 #Loop to listen for rfid reads
 while 1:
     print("Listening for client connections")
     #Wait to accept a connection
-    conn, addr = s.accept()
-    
+    #conn, addr = s.accept()
+    conn = ""
     #display client info
-    print("Accepted client connection from "+ addr[0]+ " on port "+ str(addr[1]))
+    #print("Accepted client connection from "+ addr[0]+ " on port "+ str(addr[1]))
     
     #Begin waiting for a new race
     raceLoop(conn)
