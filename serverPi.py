@@ -19,7 +19,7 @@ from botocore.exceptions import ClientError
 parser = argparse.ArgumentParser()
 
 #Takes in the arguments and assigns proper values that correspond to the flags, defaults are included
-parser.add_argument("-t", "--timer_ip", dest = "serverIP", default = "192.168.0.8", help = "Timer IP")
+#parser.add_argument("-t", "--timer_ip", dest = "serverIP", default = "192.168.0.8", help = "Timer IP")
 parser.add_argument("-d", "--debug", dest = "debug", default = "0", help = "Debug Mode")
 
 args = parser.parse_args()
@@ -105,9 +105,9 @@ def raceLoop(conn):
         currRace = raceOrder[raceCount]
         currRaceDistInt = int(currRace.split()[1])
         #Should block here and only gets the start signal
-        #dataBack = conn.recv(SIZE)
-        #signalBack = bytes.decode(dataBack)
-        signalBack = "start"
+        dataBack = conn.recv(SIZE)
+        signalBack = bytes.decode(dataBack)
+        s#ignalBack = "start"
         if "start" in signalBack:
             startTime = time.time()
             print("Race started: " + currRace)
@@ -150,21 +150,24 @@ def raceLoop(conn):
             
             
             #Send signal back to timer saying race is done
+            sendBack = str.encode("Done")
+            conn.sendall(sendBack)
             
-            
+            #Records number of races
+            raceCount += 1
         else:
             print("There was a bad start signal")
-            sys.exit()
-        raceCount += 1
+            #sys.exit()
+        
 
 #Loop to listen for rfid reads
 while 1:
     print("Listening for client connections")
     #Wait to accept a connection
-    #conn, addr = s.accept()
-    conn = ""
+    conn, addr = s.accept()
+    #conn = ""
     #display client info
-    #print("Accepted client connection from "+ addr[0]+ " on port "+ str(addr[1]))
+    print("Accepted client connection from "+ addr[0]+ " on port "+ str(addr[1]))
     
     #Begin waiting for a new race
     raceLoop(conn)
