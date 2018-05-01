@@ -39,7 +39,7 @@ for race in raceOrder:
                     'id':(runner['lane']+(raceCount*5)),
                     'runtime':"00:00:00",
                     'event':race,
-                    'lane':1,
+                    'lane':runner['lane'],
                     'rname':runner['rname']
                 }
             )
