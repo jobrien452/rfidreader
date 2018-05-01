@@ -60,7 +60,7 @@ except:
     sys.exit()
     
 while True:
-
+    
     p = pyaudio.PyAudio()
     
     
@@ -86,8 +86,7 @@ while True:
     p.terminate()
     
     
-    
-    start = "start"
+    start = str.encode("start")
     s.sendall(start)
     print("Race started")
     
