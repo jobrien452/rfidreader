@@ -2,8 +2,9 @@ Curerntly need the following packages:
 	- pyusb (pip3 install pyusb)
 	- Used for reading data from RFID reader
     -pyaudio: sudo apt-get install python3-pyaudio (used for the audio control)
-    -do the section at the top of the page on https://learn.adafruit.com/usb-audio-cards-with-a-raspberry-pi/updating-alsa-config
+    -do the section at the top of the page on https://learn.adafruit.com/usb-audio-cards-with-a-raspberry-pi/updating-alsa-config (for audio)
     -boto3 (pip3 install boto3) (used for dynamo db access)
+    -flask
     
     Files and usage:
     dbSetup.py: resets the table to times of 00:00.00 to prepare the database
