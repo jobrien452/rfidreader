@@ -70,7 +70,7 @@ pe = "id, event, runtime, lane, rname"
 
 #Global Params
 HOST = ""
-PORT = int(8888)
+PORT = int(8887)
 SIZE = int(4096)
 
 
@@ -101,12 +101,7 @@ def raceLoop(conn):
     raceCount = 0
     #Inf Loop to continue to listen for start signals
     while True:
-        #If all the events have been run
-        if raceCount >= len(raceOrder):
-            sendBack = str.encode("Finished")
-            conn.sendall(sendBack)
-            print("Race Ended")
-            break
+        
         
         currRace = raceOrder[raceCount]
         currRaceDistInt = int(currRace.split()[1])
@@ -128,6 +123,9 @@ def raceLoop(conn):
             while laneFinishes < 5:
                 code = readReader1()
                 if code in rfidLaneMap:
+                    if rfidLaneMap[code][1] >= NumOLaps and NumOLaps != 0:
+                        code = ""
+                        continue
                     rfidLaneMap[code][1] += 1
                     print("Runner in Lane: " + str(rfidLaneMap[code][0]) + " just scanned in")
                     if rfidLaneMap[code][1] >= NumOLaps:
@@ -155,13 +153,21 @@ def raceLoop(conn):
                     #ReturnValues="UPDATED_NEW"
                 )
             
-            
-            #Send signal back to timer saying race is done
-            sendBack = str.encode("Done")
-            conn.sendall(sendBack)
-            
             #Records number of races
             raceCount += 1
+            
+            #If all the events have been run
+            if raceCount >= len(raceOrder):
+                sendBack = str.encode("Finished")
+                conn.sendall(sendBack)
+                print("Race Ended")
+                break
+            else:
+                #Send signal back to timer saying race is done
+                sendBack = str.encode("Done")
+                conn.sendall(sendBack)
+            
+            
         else:
             print("There was a bad start signal")
             #sys.exit()
