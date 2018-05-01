@@ -29,8 +29,6 @@ IP = args.serverIP
 PORT = int(args.serverPort)
 SIZE = int(args.socketSize)
 
-p = pyaudio.PyAudio()
-
 def callback(in_data, frame_count, time_info, status):
     data = np.fromstring(in_data, dtype=np.int16)
     peak=np.average(np.abs(data))*2
@@ -38,37 +36,7 @@ def callback(in_data, frame_count, time_info, status):
         print(peak)
         return (data, pyaudio.paComplete)
     return (data, pyaudio.paContinue)
-
-stream = p.open(format=FORMAT,
-                channels=CHANNELS,
-                rate=RATE,
-                input_device_index=2,
-                input=True,
-                frames_per_buffer=CHUNK, stream_callback=callback) #buffer
-
-print("* recording")
-stream.start_stream()
-
-while stream.is_active():
-    time.sleep(0.1)
-
-'''
-
-for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-    #data = stream.read(CHUNK)
-    data = np.fromstring(stream.read(CHUNK), dtype=np.int16)
-    peak=np.average(np.abs(data))*2
-    if peak > 10000:
-        print(peak)
-    #frames.append(data) # 2 bytes(16 bits) per channel
-'''
-
-print("* done recording")
-
-stream.stop_stream()
-stream.close()
-p.terminate()
-
+    
 #####
 #This section creates the socket, connection, and sends the data
 #####
@@ -90,17 +58,50 @@ try:
 except:
     print("Failed to connect to the server")
     sys.exit()
-
-start = "start"
-s.sendall(start)
-print("Race started")
-
-dataBack = s.recv(SIZE)
-
-responseBack = bytes.decode(dataBack)
-if "Done" in responseBack:
-    print("Race has finished")
-    s.close();
     
-else:
-    print("Unknown response")
+while True:
+
+    p = pyaudio.PyAudio()
+    
+    
+    
+    stream = p.open(format=FORMAT,
+                    channels=CHANNELS,
+                    rate=RATE,
+                    input_device_index=2,
+                    input=True,
+                    frames_per_buffer=CHUNK, stream_callback=callback) #buffer
+    
+    print("* recording")
+    stream.start_stream()
+    
+    while stream.is_active():
+        time.sleep(0.1)
+    
+    
+    print("* done recording")
+    
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+    
+    
+    
+    start = "start"
+    s.sendall(start)
+    print("Race started")
+    
+    dataBack = s.recv(SIZE)
+    
+    responseBack = bytes.decode(dataBack)
+    if "Done" in responseBack:
+        print("Race has finished")
+        #s.close();
+    elif "Finished" in responseBack:
+        print("Meet has finished")
+        break
+    else:
+        print("Unknown response")
+        break
+
+s.close()
