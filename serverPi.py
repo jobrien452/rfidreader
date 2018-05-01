@@ -69,7 +69,6 @@ pe = "id, event, runtime, lane, rname"
 
 
 #Global Params
-IP = args.serverIP
 HOST = ""
 PORT = int(8888)
 SIZE = int(4096)
@@ -102,6 +101,13 @@ def raceLoop(conn):
     raceCount = 0
     #Inf Loop to continue to listen for start signals
     while True:
+        #If all the events have been run
+        if raceCount >= len(raceOrder):
+            sendBack = str.encode("Finished")
+            conn.sendall(sendBack)
+            print("Race Ended")
+            break
+        
         currRace = raceOrder[raceCount]
         currRaceDistInt = int(currRace.split()[1])
         #Should block here and only gets the start signal
@@ -115,6 +121,7 @@ def raceLoop(conn):
             rfidLaneMap = {64:[1,0,0],67:[2,0,0],65:[3,0,0],11:[4,0,0],68:[5,0,0]}
             #Gets the number of laps
             NumOLaps = int(currRaceDistInt/400)
+            #print("NumOLaps: "  + str(NumOLaps))
             
             #Start listening for rfid tags
             laneFinishes = 0
@@ -123,7 +130,7 @@ def raceLoop(conn):
                 if code in rfidLaneMap:
                     rfidLaneMap[code][1] += 1
                     print("Runner in Lane: " + str(rfidLaneMap[code][0]) + " just scanned in")
-                    if rfidLaneMap[code][0] >= NumOLaps:
+                    if rfidLaneMap[code][1] >= NumOLaps:
                             print("Runner in Lane: " + str(rfidLaneMap[code][0]) + " just finished")
                             rfidLaneMap[code][2] = time.time()
                             laneFinishes += 1
@@ -162,7 +169,7 @@ def raceLoop(conn):
 
 #Loop to listen for rfid reads
 while 1:
-    print("Listening for client connections")
+    print("Looking for a starterPi")
     #Wait to accept a connection
     conn, addr = s.accept()
     #conn = ""
