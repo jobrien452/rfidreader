@@ -17,6 +17,7 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(o)
 
 #Setup db writes
+##THESE ARE DEAD KEYS
 client = boto3.resource('dynamodb', 
                         aws_access_key_id='AKIAIIOO6CX7UFZIVIEA',
                         aws_secret_access_key='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',
